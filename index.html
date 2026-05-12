@@ -23,6 +23,9 @@
     <h1>Voice Agent Console</h1>
     
     <input type="text" id="sessionId" placeholder="Paste Session ID here...">
+    <button id="createSessionBtn" class="pip-button">
+        Create Browser Session
+    </button>
     
     <button id="micBtn" class="mic-button">
         <svg fill="white" height="40" viewBox="0 0 24 24" width="40"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
@@ -262,6 +265,9 @@
     <div class="container" id="mainContainer">
         <h1>Voice Agent Console</h1>
         <input type="text" id="sessionId" placeholder="Paste Session ID here...">
+        <button id="createSessionBtn" class="pip-button">
+        Create Browser Session
+        </button>
         <button id="micBtn" class="mic-button">
             <svg fill="white" height="40" viewBox="0 0 24 24" width="40">
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
@@ -287,6 +293,7 @@
     <script>
         const sessionIdInput = document.getElementById('sessionId');
         const micBtn         = document.getElementById('micBtn');
+        const createSessionBtn = document.getElementById('createSessionBtn');
         const statusText     = document.getElementById('status');
         const logs           = document.getElementById('logs');
         const pipBtn         = document.getElementById('pipBtn');
@@ -566,7 +573,44 @@
                 console.error('Document PiP error:', err);
             }
         });
+        // ─── Create Session Automatically ─────────────────────────────
+        createSessionBtn.addEventListener('click', async () => {
+            try {
+                addLog("[System] Creating browser session...");
 
+                const response = await fetch('http://localhost:8000/sessions', {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to create session");
+                }
+
+                const data = await response.json();
+
+                // Put session ID into input field
+                sessionIdInput.value = data.session_id;
+
+                addLog(`[System] Session created: ${data.session_id}`);
+                addLog(`[System] Browser opened at: ${data.start_url}`);
+
+                statusText.textContent = "Session Ready";
+
+                // OPTIONAL:
+                // Automatically connect/init socket session
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'init',
+                        session_id: data.session_id
+                    }));
+
+                    addLog("[System] Voice session initialized.");
+                }
+
+            } catch (err) {
+                addLog(`[Error] ${err.message}`);
+            }
+        });
         connect();
     </script>
 </body>
